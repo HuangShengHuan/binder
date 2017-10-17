@@ -1,3 +1,9 @@
-# My Awesome Book
+## 问题：同一应用的Activity之间数据传输是进程间通讯？
 
-This file file serves as your book's preface, a great place to describe your book's content and ideas.
+对于系统服务而言，不同应用中的Activity是没有区别的，也就是说，系统服务不管你是哪个应用的页面，其中维护一个栈，用来记录当面和后面将要进行显示的Activity。
+
+对于系统服务（AMS）而言，其只管理当前Activity需要进行的生命周期活动，所有的Activity都会被其内部维护的栈进行管理。
+
+在AMS中，会维护一个进程栈，该栈中存放的是每一个进程的Activity栈，后启动的应用，其Activity栈将会在上面。当Activity栈中的所有Activity退出之后，进程才会从进程栈中退出。
+
+tips：由于Activity栈是在远程系统服务中被维护，所有我们在自己的应用中是无法拿到Activity栈的，只能通过自定义一个ArrayList的Activity栈，来进行维护；
