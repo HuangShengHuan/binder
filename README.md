@@ -38,6 +38,133 @@ aidl即安卓接口定义语言，是一套存在于客户端，服务端，定�
 
 代理的作用是将本地操作解析为特定数据，并向Binder驱动中写入；
 
+    // 1
+    public interface IBInderInterface extends android.os.IInterface {
+        /**
+         * Local-side IPC implementation stub class.
+         */
+        public static abstract class Stub extends android.os.Binder implements com.example.bindertest.aidl.IBInderInterface {
+            // 2
+            private static final java.lang.String DESCRIPTOR = "com.example.bindertest.aidl.IBInderInterface";
+    
+            /**
+             * Construct the stub at attach it to the interface.
+             */
+            public Stub() {
+                this.attachInterface(this, DESCRIPTOR);
+            }
+    
+            /**
+             * Cast an IBinder object into an com.example.bindertest.aidl.IBInderInterface interface,
+             * generating a proxy if needed.
+             */
+            public static com.example.bindertest.aidl.IBInderInterface asInterface(android.os.IBinder obj) {
+                if ((obj == null)) {
+                    return null;
+                }
+                android.os.IInterface iin = obj.queryLocalInterface(DESCRIPTOR);
+                if (((iin != null) && (iin instanceof com.example.bindertest.aidl.IBInderInterface))) {
+                    return ((com.example.bindertest.aidl.IBInderInterface) iin);
+                }
+                return new com.example.bindertest.aidl.IBInderInterface.Stub.Proxy(obj);
+            }
+    
+            @Override
+            public android.os.IBinder asBinder() {
+                return this;
+            }
+    
+            @Override
+            public boolean onTransact(int code, android.os.Parcel data, android.os.Parcel reply, int flags) throws android.os.RemoteException {
+                switch (code) {
+                    case INTERFACE_TRANSACTION: {
+                        reply.writeString(DESCRIPTOR);
+                        return true;
+                    }
+                    case TRANSACTION_test: {
+                        data.enforceInterface(DESCRIPTOR);
+                        int _arg0;
+                        _arg0 = data.readInt();
+                        this.test(_arg0);
+                        reply.writeNoException();
+                        return true;
+                    }
+                    case TRANSACTION_test2: {
+                        data.enforceInterface(DESCRIPTOR);
+                        int _arg0;
+                        _arg0 = data.readInt();
+                        int _result = this.test2(_arg0);
+                        reply.writeNoException();
+                        reply.writeInt(_result);
+                        return true;
+                    }
+                }
+                return super.onTransact(code, data, reply, flags);
+            }
+    
+            private static class Proxy implements com.example.bindertest.aidl.IBInderInterface {
+                private android.os.IBinder mRemote;
+    
+                Proxy(android.os.IBinder remote) {
+                    mRemote = remote;
+                }
+    
+                @Override
+                public android.os.IBinder asBinder() {
+                    return mRemote;
+                }
+    
+                public java.lang.String getInterfaceDescriptor() {
+                    return DESCRIPTOR;
+                }
+    
+                @Override
+                public void test(int param) throws android.os.RemoteException {
+                    android.os.Parcel _data = android.os.Parcel.obtain();
+                    android.os.Parcel _reply = android.os.Parcel.obtain();
+                    try {
+                        _data.writeInterfaceToken(DESCRIPTOR);
+                        _data.writeInt(param);
+                        mRemote.transact(Stub.TRANSACTION_test, _data, _reply, 0);
+                        _reply.readException();
+                    } finally {
+                        _reply.recycle();
+                        _data.recycle();
+                    }
+                }
+    
+                @Override
+                public int test2(int param) throws android.os.RemoteException {
+                    android.os.Parcel _data = android.os.Parcel.obtain();
+                    android.os.Parcel _reply = android.os.Parcel.obtain();
+                    int _result;
+                    try {
+                        _data.writeInterfaceToken(DESCRIPTOR);
+                        _data.writeInt(param);
+                        mRemote.transact(Stub.TRANSACTION_test2, _data, _reply, 0);
+                        _reply.readException();
+                        _result = _reply.readInt();
+                    } finally {
+                        _reply.recycle();
+                        _data.recycle();
+                    }
+                    return _result;
+                }
+            }
+    
+            static final int TRANSACTION_test = (android.os.IBinder.FIRST_CALL_TRANSACTION + 0);
+            static final int TRANSACTION_test2 = (android.os.IBinder.FIRST_CALL_TRANSACTION + 1);
+        }
+    
+        public void test(int param) throws android.os.RemoteException;
+    
+        public int test2(int param) throws android.os.RemoteException;
+    }
+
+1、所有的aidl接口都需要继承android.os.IInterface接口；该接口是与C++层通讯协议；
+2、DESCRIPTOR 的作用：
+- 每一个aidl接口的唯一表示，因为进程中可能存在多个aidl接口；
+- 在需要进行反射时，直接使用该标识就可以找到对应类；
 
 ## Binder驱动位于C++层
 
