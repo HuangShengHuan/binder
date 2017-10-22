@@ -20,7 +20,7 @@ bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
 
 2.Binder驱动中找到存在对应AIDL的进程，调起该服务进程；
 
-3.服务进程实现了aidl存根的Binder引用并返回；
+3.服务进程实现了对应接口的方法，并把对应的Binder引用返回：
 
 ```
     @Override
@@ -50,10 +50,10 @@ private ServiceConnection mServiceConnection = new ServiceConnection() {
 
  客户端进程之所以要拷贝一份与服务端进程相同的aidl信息，其目的:
 
-* 服务端在接收到绑定请求时，在其onBind方法中会返回Binder引用，此时，在客户端进程中能够通过该aidl将Binder引用转化为对应的接口引用，这样就能调用对应的接口方法（**这其实就是存根stub的作用！**）；
+* 服务端在接收到绑定请求时，在其onBind方法中会返回Binder引用，此时，在客户端进程中能够通过该aidl将Binder引用转化为对应的接口引用，这样就能调用对应的接口方法；
 
 * 通过IBInderInterface.Stub.asInterface(service);返回的其实是代理Proxy的对象，Proxy实际上是stub的
-内部类，其中又包含了Stub 的引用：
+内部类，其中又包含了服务进程的Binder引用：
 
 
     private static class Proxy implements com.example.bindertest.aidl.IBInderInterface {
@@ -94,6 +94,7 @@ private ServiceConnection mServiceConnection = new ServiceConnection() {
             android.os.Parcel _reply = android.os.Parcel.obtain();
             int _result;
             try {
+                //向Binder驱动确认调用的aidl
                 _data.writeInterfaceToken(DESCRIPTOR);
                 _data.writeInt(param);
                 mRemote.transact(Stub.TRANSACTION_test2, _data, _reply, 0);
@@ -107,14 +108,15 @@ private ServiceConnection mServiceConnection = new ServiceConnection() {
         }
     }
 
- 在Proxy中，实现了我们能够调用的服务端的接口方法，但其实际是用来把客户端传递的参数转化为特定格式数据（Parcel），然后调用Stub的transact方法来实现向服务端写数据和读取返回值：
+ 在Proxy中，实现了我们能够调用的服务端的接口方法，但其实际是用来把客户端传递的参数存进Parcel中，然后调用  Stub的transact方法来实现向服务端写数据和读取返回值：
  
     mRemote.transact(Stub.TRANSACTION_test2, _data, _reply, 0);
 
- 其中，传递参数和获取返回值通过：
+
+ 在服务端进程中，实现了存根stub的实例，包含了对应的接口方法的具体实现逻辑；
  
-     android.os.Parcel _data = android.os.Parcel.obtain();
-     android.os.Parcel _reply = android.os.Parcel.obtain();
+ 当客户端调用transact方法之后，服务端存根的onTransact方法会被Binder驱动调用，客户端的参数在这里被接收；
+ （其中具体的流程，客户端参数怎么通过Binder驱动调用传到服务端，这部分是由底层C++实现的。）
 
  
          @Override
@@ -125,13 +127,14 @@ private ServiceConnection mServiceConnection = new ServiceConnection() {
                     return true;
                 }
                 case TRANSACTION_test: {
-                    //连接
+                    //验证是否是目标aidl
                     data.enforceInterface(DESCRIPTOR);
                     int _arg0;
+                    //读取客户端传递的参数
                     _arg0 = data.readInt();
-                    //向服务端写参数
+                    //调用服务端本地实现的test方法
                     this.test(_arg0);
-                    //读取返回异常
+                    //如果有异常，写回去
                     reply.writeNoException();
                     return true;
                 }
@@ -148,12 +151,7 @@ private ServiceConnection mServiceConnection = new ServiceConnection() {
             }
             return super.onTransact(code, data, reply, flags);
         }
+
+ 可以看到，当服务端操作完成后，返回了true，操作结束；此时客户端由于调用transact方法而进入的等待操作也会结束，如果有返回值，通过Parcel（_reply）就能直接拿到；
  
- 可以看到，最终向服务端写数据时，是调用stub的对应的接口方法：
-     
-     public void test(int param) throws android.os.RemoteException;
-     public int test2(int param) throws android.os.RemoteException;
-
- 这两个方法实际应该是与Binder驱动通讯用的，并没有具体实现，而两个Parcel实际只是在本地通讯用的，用来在stub和proxy之间进行参数传递。
-
-
+ _说明：虽然整个流程涉及了进程间操作，但是在客户端进程中，并不是表现为异步的，因为当客户端进程调用服务端方法（通过transact方法），此时客户端直接进入了等待，直到服务端响应，才会继续往下执行。这个流程在客户端上表现为同步！_
