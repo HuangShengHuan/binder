@@ -171,3 +171,5 @@ public interface IBInderInterface extends android.os.IInterface {
 
 Binder驱动位于系统的C++层的独立进程，位于Android系统专门分配出来的内存中，用来实现进程间的通讯。
 
+Binder驱动是使用Socket实现的，用来实现Java与C++层的通讯。
+
