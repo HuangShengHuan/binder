@@ -118,7 +118,7 @@ mRemote.transact(Stub.TRANSACTION_test2, _data, _reply, 0);
 在服务端进程中，实现了存根stub的实例，包含了对应的接口方法的具体实现逻辑；
 
 当客户端调用transact方法之后，服务端存根的onTransact方法会被Binder驱动调用，客户端的参数在这里被接收；  
- （其中具体的流程，客户端参数怎么通过Binder驱动调用传到服务端，这部分是由底层C++实现的。）
+ （在客户端调用Proxy的transact方法后，会将要调用方法的数据转化为常量，传递给Binder驱动；Binder驱动根据DESCRIPTOR找到对应pid的内存，根据内存中的信息找到对应服务端，调用onTransact方法，调起对应的方法；）
 
 ```
      @Override
