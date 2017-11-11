@@ -26,7 +26,9 @@ bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
     @Override
     public IBinder onBind(Intent intent) {
         //实现存根stub中的抽象方法 
-        return new IBInderInterface.Stub();
+        return new IBInderInterface.Stub(){
+            ...
+        };
     }
 ```
 
